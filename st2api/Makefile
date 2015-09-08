@@ -59,10 +59,12 @@ all: install
 
 install: wheelhouse changelog
 
-post_install:
+post_install: bdist_wheel
 	# post_install is triggered debian/rules file, don't call it from install target!
 	# We don't want anything like below to be postinst
-	sed -i -r "/args\s*=\s*/s%logs%/var/log/st2%g" $(DESTDIR)/etc/$(ST2_COMPONENT)/logging.*conf
+	install conf/logging.conf $(DESTDIR)/etc/st2/logging.api.conf
+	install conf/syslog.conf $(DESTDIR)/etc/st2/syslog.api.conf
+	sed -i -r "/args\s*=\s*/s%logs%/var/log/st2%g" $(DESTDIR)/etc/st2/logging.*conf
 
 populate_version: .stamp-populate_version
 .stamp-populate_version:
@@ -84,4 +86,9 @@ wheelhouse: .stamp-wheelhouse
 	pip wheel --wheel-dir=$(WHEELDIR) -r requirements.txt
 	# We can modify requirements ONLY AFTER wheelhouse has been built
 	@echo "st2common" >> requirements.txt
+	touch $@
+
+bdist_wheel: .stamp-bdist_wheel
+.stamp-bdist_wheel: populate_version
+	python setup.py bdist_wheel -d $(WHEELDIR)
 	touch $@
